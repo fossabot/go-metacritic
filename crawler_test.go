@@ -15,13 +15,10 @@ import (
 type MockClient struct {
 	metacritic.Client
 
-	DoFn       func(req *http.Request) (*http.Response, error)
-	DoFnCalled bool
+	DoFn func(req *http.Request) (*http.Response, error)
 }
 
 func (m *MockClient) Do(req *http.Request) (*http.Response, error) {
-	m.DoFnCalled = true
-
 	if m.DoFn != nil {
 		return m.DoFn(req)
 	}
