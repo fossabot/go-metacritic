@@ -1,0 +1,21 @@
+language: go
+sudo: false
+matrix:
+  include:
+    - go: 1.x
+      env:
+        - LATEST=true
+        - GO111MODULE=on
+    - go: tip
+  allow_failures:
+    - go: tip
+
+env:
+  matrix:
+    - GO111MODULE=on
+
+script:
+  - go mod download
+  - diff -u <(echo -n) <(gofmt -d .)
+  - go vet ./...
+  - go test -v -race ./...
