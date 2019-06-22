@@ -6,8 +6,10 @@ go-metacritic is a simple lib to crawl Metacritic for the Metascore and userscor
 ## Changelog
 
 **v0.2.0**
-- refactoring and cleanup
-- removed lib "github.com/PuerkitoBio/goquery"
+- Rewritten the parser to be based on "golang.org/x/net/html" => "github.com/PuerkitoBio/goquery" is now removed
+- Added integration test to detect layout changes on metacritic per travis build job
+- Some project layout changes
+- The internal api slightly changed
 
 **v0.1.0**
 - Initial release.
