@@ -7,13 +7,11 @@ import (
 	"os"
 	"testing"
 
-	"github.com/PuerkitoBio/goquery"
-
-	"github.com/stahlstift/go-metacritic"
+	"github.com/stahlstift/go-metacritic/pkg/metacritic"
 )
 
 func ExampleMetacritic_Search() {
-	mc := metacritic.NewWithDefaults()
+	mc := metacritic.New()
 	res, err := mc.Search("Mario", metacritic.Switch)
 	if err != nil {
 		panic(err)
@@ -25,18 +23,26 @@ func ExampleMetacritic_Search() {
 }
 
 func ExampleMetacritic_SearchBestMatch() {
-	mc := metacritic.NewWithDefaults()
+	mc := metacritic.New()
 	game := mc.SearchBestMatch("Mario Kart 8", metacritic.Switch)
 	if game != nil {
 		fmt.Printf("%d, %f, %s", game.MetaScore, game.UserScore, game.Title)
 	}
 }
 
-func TestMetacritic_Search(t *testing.T) {
-	t.Parallel()
+func buildWithClient(c metacritic.Client) *metacritic.Metacritic {
+	return &metacritic.Metacritic{
+		Crawler: &metacritic.DefaultCrawler{
+			Client:     c,
+			Concurrent: 2,
+			UserAgent:  "unittest",
+		},
+		Parser: &metacritic.DefaultParser{},
+	}
+}
 
-	mockClient := &MockClient{}
-	mockClient.DoFn = func(req *http.Request) (response *http.Response, err error) {
+var mockClient = &MockClient{
+	DoFn: func(req *http.Request) (response *http.Response, err error) {
 		res := httptest.NewRecorder().Result()
 
 		if req.URL.String() == "https://www.metacritic.com/search/game/Mario/results?plats[268409]=1&search_type=advanced" {
@@ -64,15 +70,13 @@ func TestMetacritic_Search(t *testing.T) {
 		}
 
 		return res, nil
-	}
+	},
+}
 
-	c := metacritic.DefaultCrawler{
-		Client:     mockClient,
-		Concurrent: 2,
-		Parser:     goquery.NewDocumentFromReader,
-		UserAgent:  "unittest",
-	}
-	mc := metacritic.NewWithCrawler(&c)
+func TestMetacritic_Search(t *testing.T) {
+	t.Parallel()
+
+	mc := buildWithClient(mockClient)
 
 	res, err := mc.Search("Mario", metacritic.Switch)
 	if err != nil {
@@ -89,7 +93,6 @@ func TestMetacritic_SearchNoGameResult(t *testing.T) {
 
 	mockClient := &MockClient{}
 	mockClient.DoFn = func(req *http.Request) (response *http.Response, err error) {
-
 		if req.URL.String() == "https://www.metacritic.com/search/game/Mario/results?plats[268409]=1&search_type=advanced" {
 			res := httptest.NewRecorder().Result()
 
@@ -104,13 +107,7 @@ func TestMetacritic_SearchNoGameResult(t *testing.T) {
 		return nil, fmt.Errorf("unittest")
 	}
 
-	c := metacritic.DefaultCrawler{
-		Client:     mockClient,
-		Concurrent: 2,
-		Parser:     goquery.NewDocumentFromReader,
-		UserAgent:  "unittest",
-	}
-	mc := metacritic.NewWithCrawler(&c)
+	mc := buildWithClient(mockClient)
 
 	res, err := mc.Search("Mario", metacritic.Switch)
 	if err != nil {
@@ -130,13 +127,7 @@ func TestMetacritic_SearchNoSearchResult(t *testing.T) {
 		return httptest.NewRecorder().Result(), nil
 	}
 
-	c := metacritic.DefaultCrawler{
-		Client:     mockClient,
-		Concurrent: 2,
-		Parser:     goquery.NewDocumentFromReader,
-		UserAgent:  "unittest",
-	}
-	mc := metacritic.NewWithCrawler(&c)
+	mc := buildWithClient(mockClient)
 
 	res, err := mc.Search("Mario", metacritic.Switch)
 	if err != nil {
@@ -156,13 +147,7 @@ func TestMetacritic_SearchCrawlOneReturnsError(t *testing.T) {
 		return nil, fmt.Errorf("unittest")
 	}
 
-	c := metacritic.DefaultCrawler{
-		Client:     mockClient,
-		Concurrent: 2,
-		Parser:     goquery.NewDocumentFromReader,
-		UserAgent:  "unittest",
-	}
-	mc := metacritic.NewWithCrawler(&c)
+	mc := buildWithClient(mockClient)
 
 	_, err := mc.Search("Mario", metacritic.Switch)
 	if err == nil {
@@ -173,44 +158,7 @@ func TestMetacritic_SearchCrawlOneReturnsError(t *testing.T) {
 func TestMetacritic_SearchBestMatch(t *testing.T) {
 	t.Parallel()
 
-	mockClient := &MockClient{}
-	mockClient.DoFn = func(req *http.Request) (response *http.Response, err error) {
-		res := httptest.NewRecorder().Result()
-
-		if req.URL.String() == "https://www.metacritic.com/search/game/Mario/results?plats[268409]=1&search_type=advanced" {
-			file, err := os.Open("./testdata/search_result.html")
-			if err != nil {
-				return nil, err
-			}
-			res.Body = file
-		}
-
-		if req.URL.String() == "https://www.metacritic.com/game/switch/super-mario-party" {
-			file, err := os.Open("./testdata/mario_party.html")
-			if err != nil {
-				return nil, err
-			}
-			res.Body = file
-		}
-
-		if req.URL.String() == "https://www.metacritic.com/game/switch/super-mario-odyssey" {
-			file, err := os.Open("./testdata/mario_odysee.html")
-			if err != nil {
-				return nil, err
-			}
-			res.Body = file
-		}
-
-		return res, nil
-	}
-
-	c := metacritic.DefaultCrawler{
-		Client:     mockClient,
-		Concurrent: 2,
-		Parser:     goquery.NewDocumentFromReader,
-		UserAgent:  "unittest",
-	}
-	mc := metacritic.NewWithCrawler(&c)
+	mc := buildWithClient(mockClient)
 
 	res := mc.SearchBestMatch("Mario", metacritic.Switch)
 	if res == nil {
@@ -240,13 +188,7 @@ func TestMetacritic_SearchBestMatchNoResult(t *testing.T) {
 		return res, nil
 	}
 
-	c := metacritic.DefaultCrawler{
-		Client:     mockClient,
-		Concurrent: 2,
-		Parser:     goquery.NewDocumentFromReader,
-		UserAgent:  "unittest",
-	}
-	mc := metacritic.NewWithCrawler(&c)
+	mc := buildWithClient(mockClient)
 
 	res := mc.SearchBestMatch("Mario", metacritic.Switch)
 	if res != nil {
@@ -280,13 +222,7 @@ func TestMetacritic_SearchBestMatchOneResult(t *testing.T) {
 		return res, nil
 	}
 
-	c := metacritic.DefaultCrawler{
-		Client:     mockClient,
-		Concurrent: 2,
-		Parser:     goquery.NewDocumentFromReader,
-		UserAgent:  "unittest",
-	}
-	mc := metacritic.NewWithCrawler(&c)
+	mc := buildWithClient(mockClient)
 
 	res := mc.SearchBestMatch("Mario", metacritic.Switch)
 	if res == nil {
@@ -324,57 +260,7 @@ func TestMetacritic_SearchBestMatchNoMetascore(t *testing.T) {
 		return res, nil
 	}
 
-	c := metacritic.DefaultCrawler{
-		Client:     mockClient,
-		Concurrent: 2,
-		Parser:     goquery.NewDocumentFromReader,
-		UserAgent:  "unittest",
-	}
-	mc := metacritic.NewWithCrawler(&c)
-
-	res := mc.SearchBestMatch("Mario", metacritic.Switch)
-	if res == nil {
-		t.Fatalf("SearchBestMatch() did not return a result")
-	}
-
-	if res.MetaScore != 0 {
-		t.Fatalf("Wrong Metascore returned '%d' instead of '0'", res.MetaScore)
-	}
-}
-
-func TestMetacritic_SearchBestMatchWrongMetascore(t *testing.T) {
-	t.Parallel()
-
-	mockClient := &MockClient{}
-	mockClient.DoFn = func(req *http.Request) (response *http.Response, err error) {
-		res := httptest.NewRecorder().Result()
-
-		if req.URL.String() == "https://www.metacritic.com/search/game/Mario/results?plats[268409]=1&search_type=advanced" {
-			file, err := os.Open("./testdata/search_result_one_game2.html")
-			if err != nil {
-				return nil, err
-			}
-			res.Body = file
-		}
-
-		if req.URL.String() == "https://www.metacritic.com/game/switch/super-mario-odyssey" {
-			file, err := os.Open("./testdata/mario_odysee_wrong_meta.html")
-			if err != nil {
-				return nil, err
-			}
-			res.Body = file
-		}
-
-		return res, nil
-	}
-
-	c := metacritic.DefaultCrawler{
-		Client:     mockClient,
-		Concurrent: 2,
-		Parser:     goquery.NewDocumentFromReader,
-		UserAgent:  "unittest",
-	}
-	mc := metacritic.NewWithCrawler(&c)
+	mc := buildWithClient(mockClient)
 
 	res := mc.SearchBestMatch("Mario", metacritic.Switch)
 	if res == nil {
@@ -412,13 +298,7 @@ func TestMetacritic_SearchBestMatchNoUserscore(t *testing.T) {
 		return res, nil
 	}
 
-	c := metacritic.DefaultCrawler{
-		Client:     mockClient,
-		Concurrent: 2,
-		Parser:     goquery.NewDocumentFromReader,
-		UserAgent:  "unittest",
-	}
-	mc := metacritic.NewWithCrawler(&c)
+	mc := buildWithClient(mockClient)
 
 	res := mc.SearchBestMatch("Mario", metacritic.Switch)
 	if res == nil {
@@ -456,13 +336,7 @@ func TestMetacritic_SearchBestMatchWrongUserscore(t *testing.T) {
 		return res, nil
 	}
 
-	c := metacritic.DefaultCrawler{
-		Client:     mockClient,
-		Concurrent: 2,
-		Parser:     goquery.NewDocumentFromReader,
-		UserAgent:  "unittest",
-	}
-	mc := metacritic.NewWithCrawler(&c)
+	mc := buildWithClient(mockClient)
 
 	res := mc.SearchBestMatch("Mario", metacritic.Switch)
 	if res == nil {

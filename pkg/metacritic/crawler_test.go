@@ -2,14 +2,11 @@ package metacritic_test
 
 import (
 	"fmt"
-	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
-	"github.com/PuerkitoBio/goquery"
-
-	"github.com/stahlstift/go-metacritic"
+	"github.com/stahlstift/go-metacritic/pkg/metacritic"
 )
 
 type MockClient struct {
@@ -41,7 +38,6 @@ func TestUserAgentIsAdded(t *testing.T) {
 	c := &metacritic.DefaultCrawler{
 		Client:     mock,
 		Concurrent: 2,
-		Parser:     goquery.NewDocumentFromReader,
 		UserAgent:  userAgent,
 	}
 	_ = c.Crawl([]string{"http://www.example.org", "http://www.example.org/1"})
@@ -54,7 +50,6 @@ func TestBrokenURL(t *testing.T) {
 	c := &metacritic.DefaultCrawler{
 		Client:     mock,
 		Concurrent: 2,
-		Parser:     goquery.NewDocumentFromReader,
 		UserAgent:  userAgent,
 	}
 
@@ -65,31 +60,6 @@ func TestBrokenURL(t *testing.T) {
 
 	if res[0].Error == nil {
 		t.Fatal("Expected error - received nil")
-	}
-}
-
-func TestParserError(t *testing.T) {
-	t.Parallel()
-
-	parseError := fmt.Errorf("parse_error")
-
-	mock := &MockClient{}
-	c := &metacritic.DefaultCrawler{
-		Client:     mock,
-		Concurrent: 2,
-		Parser: func(r io.Reader) (document *goquery.Document, err error) {
-			return nil, parseError
-		},
-		UserAgent: userAgent,
-	}
-
-	res := c.Crawl([]string{"http://www.example.org", "http://www.example.org/1"})
-	if len(res) == 0 {
-		t.Fatal("Crawler() returned 0 results")
-	}
-
-	if res[0].Error != parseError {
-		t.Fatalf("Crawler() did not receive correct error. Expected '%s' - got '%s'", parseError, res[0].Error)
 	}
 }
 
@@ -105,7 +75,6 @@ func TestCrawlClientError(t *testing.T) {
 	c := &metacritic.DefaultCrawler{
 		Client:     mock,
 		Concurrent: 2,
-		Parser:     goquery.NewDocumentFromReader,
 		UserAgent:  userAgent,
 	}
 	res := c.Crawl([]string{"http://www.example.org", "http://www.example.org/1"})
@@ -128,7 +97,6 @@ func TestCrawlOne(t *testing.T) {
 	c := &metacritic.DefaultCrawler{
 		Client:     mock,
 		Concurrent: 2,
-		Parser:     goquery.NewDocumentFromReader,
 		UserAgent:  userAgent,
 	}
 	res := c.CrawlOne("http://www.example.org")

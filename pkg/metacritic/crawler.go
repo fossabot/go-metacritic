@@ -1,11 +1,8 @@
 package metacritic
 
 import (
-	"io"
 	"net/http"
 	"sync"
-
-	"github.com/PuerkitoBio/goquery"
 )
 
 // Client is the interface used by the Crawler to retrieve the data from the url.
@@ -15,44 +12,36 @@ type Client interface {
 
 // Result is the result returned from the DefaultCrawler.
 type Result struct {
-	Doc   *goquery.Document
-	URL   string
-	Error error
+	Error    error
+	Response *http.Response
 }
 
 // DefaultCrawler is the default implementation for the Crawler interface.
 type DefaultCrawler struct {
 	Concurrent int
 	Client     Client
-	Parser     func(r io.Reader) (*goquery.Document, error)
 	UserAgent  string
 }
 
-func (c *DefaultCrawler) doQuery(url string) (*goquery.Document, error) {
+func (c *DefaultCrawler) doQuery(url string) *Result {
 	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
-		return nil, err
+		return &Result{
+			Error: err,
+		}
 	}
 	req.Header.Set("User-Agent", c.UserAgent)
 
-	return c.doQueryRequest(req)
-}
-
-func (c *DefaultCrawler) doQueryRequest(req *http.Request) (*goquery.Document, error) {
 	res, err := c.Client.Do(req)
-	if res != nil {
-		defer res.Body.Close()
-	}
 	if err != nil {
-		return nil, err
+		return &Result{
+			Error: err,
+		}
 	}
 
-	doc, err := c.Parser(res.Body)
-	if err != nil {
-		return nil, err
+	return &Result{
+		Response: res,
 	}
-
-	return doc, err
 }
 
 // Crawl will start the crawling process for given urls in concurrent.
@@ -65,16 +54,12 @@ func (c *DefaultCrawler) Crawl(urls []string) []*Result {
 	for _, url := range urls {
 		sem <- struct{}{}
 		go func(u string) {
-			doc, err := c.doQuery(u)
+			result := c.doQuery(u)
 
 			mu.Lock()
 			defer mu.Unlock()
 
-			results = append(results, &Result{
-				Doc:   doc,
-				Error: err,
-				URL:   u,
-			})
+			results = append(results, result)
 
 			<-sem
 		}(url)
