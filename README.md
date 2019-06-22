@@ -5,7 +5,12 @@ go-metacritic is a simple lib to crawl Metacritic for the Metascore and userscor
 
 ## Changelog
 
-*    **v0.1.0** : Initial release.
+**v0.2.0**
+- refactoring and cleanup
+- removed lib "github.com/PuerkitoBio/goquery"
+
+**v0.1.0**
+- Initial release.
 
 ## Example
 
@@ -19,7 +24,7 @@ import (
 )
 
 func main() {
-    mc := metacritic.NewWithDefaults()
+    mc := metacritic.New()
     res, err := mc.Search("Mario", metacritic.Switch)
     if err != nil {
         panic(err)
