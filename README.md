@@ -1,5 +1,6 @@
 # go-metacritic
 [![build status](https://secure.travis-ci.org/stahlstift/go-metacritic.svg?branch=master)](http://travis-ci.org/stahlstift/go-metacritic) [![GoDoc](https://godoc.org/github.com/stahlstift/go-metacritic?status.png)](http://godoc.org/github.com/stahlstift/go-metacritic) [![Sourcegraph Badge](https://sourcegraph.com/github.com/stahlstift/go-metacritic/-/badge.svg)](https://sourcegraph.com/github.com/stahlstift/go-metacritic?badge)
+[![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2Fdemaggus83%2Fgo-metacritic.svg?type=shield)](https://app.fossa.io/projects/git%2Bgithub.com%2Fdemaggus83%2Fgo-metacritic?ref=badge_shield)
 
 go-metacritic is a simple lib to crawl Metacritic for the Metascore and userscore of a game and platform.
 
@@ -44,3 +45,7 @@ func main() {
     }
 }
 ```
+
+
+## License
+[![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2Fdemaggus83%2Fgo-metacritic.svg?type=large)](https://app.fossa.io/projects/git%2Bgithub.com%2Fdemaggus83%2Fgo-metacritic?ref=badge_large)
